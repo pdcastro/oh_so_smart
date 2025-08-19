@@ -1,0 +1,173 @@
+name: Test, build and release
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      # https://github.com/marketplace/actions/debugging-with-tmate
+      tmate_build_job:
+        type: boolean
+        description: "Enable tmate (build job)"
+        required: false
+        default: false
+      tmate_release_job:
+        type: boolean
+        description: "Enable tmate (release job)"
+        required: false
+        default: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Run unit tests
+        run: |
+          set -x
+          python -m venv venv
+          ./venv/bin/pip install -r requirements.txt
+          ./venv/bin/python -m unittest discover -t . -s oh_so_smart/test
+
+      - name: Run linters
+        run: |
+          set -x
+          ./venv/bin/pip install -r requirements_dev.txt
+          ./scripts/lint.py all
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) }}
+    permissions:
+      contents: read
+      packages: write # To allow ‘docker push’ to push to GHCR.io
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: "./scripts/manage-packages"
+
+      # The QEMU action enables the emulation of CPU architectures like ARM
+      # on Intel/x86 GitHub runners. Used by the pypa/cibuildwheel action.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm,arm64
+
+      # Enable a multi-platform image store (so that ‘docker images’ works).
+      # https://docs.docker.com/engine/storage/containerd/
+      - name: Enable containerd image store on Docker Engine
+        run: |
+          cfg='/etc/docker/daemon.json'
+          if [ -f "${cfg}" ]; then
+            echo "File '${cfg}' already exists; won’t overwrite; aborting."
+            exit 1
+          fi
+          contents='{"features": {"containerd-snapshotter": true}}'
+          sudo bash -c "echo '${contents}' > '${cfg}'"
+          set -x
+          sudo systemctl restart docker
+          docker --version
+          docker info -f '{{ .DriverStatus }}'
+
+      # Login against a Docker registry except on PR
+      # https://github.com/docker/login-action
+      - name: Registry login
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Enable a tmate ssh debugging shell for manually triggered workflows if an input
+      # checkbox is ticked. https://github.com/marketplace/actions/debugging-with-tmate
+      - name: Setup tmate session
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.tmate_build_job }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          detached: false
+
+      - name: Build and publish Docker images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -x
+          ./scripts/release.py build
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: >
+      ${{ contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) &&
+          github.ref == 'refs/heads/main' }}
+    permissions:
+      # ‘write’ to allow Python Semantic Release (PSR) to push commits and tags
+      # to the repo using ‘git’ command lines.
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # Enable a tmate ssh debugging shell for manually triggered workflows if an input
+      # checkbox is ticked. https://github.com/marketplace/actions/debugging-with-tmate
+      - name: Setup tmate session
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.tmate_release_job }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          detached: false
+
+      - name: Create a GitHub Release
+        env:
+          # Using secrets.GITHUB_TOKEN with ‘permissions: contents: write’ was not
+          # enough for PSR to create new releases, even when the repo settings were:
+          #     Settings > Actions > General > Workflow permissions
+          #     [x] Read and write permissions - “Workflows have read and write
+          #         permissions in the repository for all scopes.”
+          # Hence instead using a fine-grained PAT (Personal Access Token) made
+          # available as ‘secrets.PSR_TOKEN’.  Ironically, the only permission
+          # given to the PAT is ‘contents: write’.
+          GH_TOKEN: ${{ secrets.PSR_TOKEN }}
+        run: |
+          set -x
+          ./scripts/release.py release

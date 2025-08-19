@@ -1,0 +1,5 @@
+--extra-index-url https://www.piwheels.org/simple
+gpiod~=2.3
+paho-mqtt~=2.1
+pydantic~=2.11
+w1thermsensor[async]~=2.3

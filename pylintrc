@@ -1,0 +1,20 @@
+[MAIN]
+init-hook='import sys; import os; sys.path.append(os.getcwd())'
+extension-pkg-whitelist=pydantic
+
+[MESSAGES CONTROL]
+disable=line-too-long, # using ‘ruff format’ for this
+    broad-exception-caught,
+    broad-exception-raised,
+    consider-using-f-string,
+    global-statement,
+    import-outside-toplevel,
+    missing-class-docstring,
+    missing-function-docstring,
+    no-else-return,
+    missing-module-docstring,
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-instance-attributes,
+    too-many-locals,
+    too-many-positional-arguments

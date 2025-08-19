@@ -1,0 +1,30 @@
+# Note: The PyPI `pydantic-core` package does not provide pre-built Python
+# wheels for armv6l (glibc, musl) or armv7l (musl), while piwheels.org does
+# not provide wheels for Python 3.12 or 3.13 (as of Aug 2025). As a result,
+# for armv6 and armv7 devices, the `pip install` step takes 10+ minutes to
+# compile a Rust binary extension with 600% CPU and 6GB RAM (MacBook M2).
+# So if you are using an armv6 (Pi 1) or armv7 (Pi 2) device, you are
+# probably better off using the `Dockerfile.debian` file.
+
+# Dev note: To benefit from caching, keep the Alpine version used in this file
+# in sync with the one used in ‘scripts/docker.sh’ get_base_image().
+
+# https://hub.docker.com/_/python
+FROM python:3.13-alpine3.22 AS build
+# 'cargo' is only needed in case a pydantic-core wheel needs to be built.
+RUN apk add autoconf autoconf-archive automake bash binutils curl g++ git \
+  libtool linux-headers make patchelf pkgconfig # cargo
+WORKDIR /oh_so_smart
+COPY requirements.txt ./
+RUN python -m venv env && ./env/bin/pip install -r requirements.txt
+
+FROM python:3.13-alpine3.22
+RUN apk add bash rsync
+WORKDIR /oh_so_smart
+COPY --from=build /oh_so_smart ./
+COPY oh_so_smart oh_so_smart/
+COPY scripts/*.py scripts/*.sh scripts/
+ENV W1THERMSENSOR_NO_KERNEL_MODULE=1
+ENTRYPOINT ["./env/bin/python", "-O", "oh_so_smart/restarter.py"]
+LABEL org.opencontainers.image.source="https://github.com/pdcastro/oh_so_smart"
+LABEL org.opencontainers.image.licenses="OSL-3.0"

@@ -1,0 +1,93 @@
+# smart_socket.toml: Example configuration file for a smart double socket device.
+# Each socket is controlled by a Home Assistant switch mapped to a GPIO pin.
+
+# A product refers to a smart device category such as a smart power plug/socket
+# or a smart thermostat. All products share a common core codebase, but each
+# product may have some custom source code in a source code subdirectory.
+[product]
+# slug: A short name such as ‘smart_thermostat’ or ‘smart_socket’.
+# This value is used in MQTT identifiers and in Docker container names.
+slug = 'smart_socket'
+# source_dir: Subdirectory of oh_so_smart/products/ that contains
+# product-specific source code.
+source_dir = 'smart_socket'
+
+# The deployment section contains attributes of the hardware and software
+# environment that the product will be deployed to. This section is used
+# by deployment shell scripts rather than the application source code.
+[deployment]
+# docker_platforms: List of Docker platform identifiers for the target
+# device (the device that runs the Oh So Smart app, e.g. a Raspberry Pi).
+# A multi-platform Docker image is built if the list contains more than one
+# platform. This setting is used by the ‘docker.py build’ script. Examples:
+# - 'arm/v6'  (Raspberry Pi 1 and the original Pi Zero)
+# - 'arm/v7'  (Raspberry Pi 2)
+# - 'arm64'   (Raspberry Pi 3/4/5, Pi Zero 2)
+# - 'i386' or '386'  (32-bit x86)
+# - 'amd64' or 'x86_64' or 'x86-64'  (64-bit x86)
+docker_platform = ['arm64']
+
+# python_distro: The Python Docker image variant, either ‘alpine’ or ‘debian’.
+# ‘distro’ is short for Linux Distribution. Choosing ‘alpine’ results in smaller
+# Docker images, but it is not well supported on arm/v6 or arm/v7 (the PyPI
+# `pydantic-core` package does not provide pre-built Python wheels for arm/v6
+# and arm/v7). See also comments in the ‘Dockerfile.alpine’ file.
+python_distro = 'debian'
+
+# ssh_host_name: The name of the ‘Host’ entry in your workstation’s
+# ‘~/.ssh/config’ file (even on Microsoft Windows!) that configures ssh
+# access for the target device. The target device is the device that runs
+# the Oh So Smart app, e.g. a Raspberry Pi. This setting is used by the
+# ‘docker.py’ and ‘upload.py’ deployment scripts. For example, ssh_host_name
+# would be ‘pi4’ given the the following excerpt from ‘~/.ssh/config’:
+#   Host pi4
+#     Hostname 192.168.1.123
+#     User root
+#     Port 22
+#     PreferredAuthentications publickey
+#     ConnectTimeout 5
+ssh_host_name = 'pi4'
+
+# Project directory in the target device’s host operating system where the
+# Oh So Smart application files are deployed. Check the README file and the
+# help output of the ‘upload.py’ and ‘docker.py’ (or ‘docker.sh’) scripts for
+# additional documentation.
+host_os_project_dir = '/root/oh_so_smart'
+
+# MQTT broker details.
+[mqtt]
+client_id = 'smart_socket'
+
+# The MQTT server hostname, port number, username and password may be set here
+# in the TOML configuration file. Alternatively, environment variables with the
+# following names can be used:
+#     MQTT_SERVER_HOSTNAME
+#     MQTT_SERVER_PORT
+#     MQTT_SERVER_USERNAME
+#     MQTT_SERVER_PASSWORD
+# These variables take precedence over the respective settings below. If the
+# variables are set, the respective configuration lines below may be deleted.
+[mqtt.server]
+hostname = 'hostname_or_ip_address'
+port = 1883
+username = 'sample username'
+password = 'sample password'
+
+# Note: Double brackets [[...]] are TOML notation for an “array of tables”
+# (a.k.a. “list of objects” or “list of dictionaries”).
+
+# A switch group (such as a group of Home Assistant switches) defines common
+# attributes such as the MQTT topic. The ‘.switches’ subsection lists each
+# individual switch in the group.
+[[switch_groups]]
+mqtt_topic = 'smart_socket'
+keep_alive_timeout_sec = 30 # HASS MQTT msg timeout period. 0 to disable.
+
+# GPIO pin numbers are board header numbers. See ‘rpi_pin_map.py’.
+[[switch_groups.switches]]
+mqtt_name = 'Mechanical Relay'
+gpio_pin = 22
+
+[[switch_groups.switches]]
+mqtt_name = 'Solid State Relay'
+gpio_pin = 13

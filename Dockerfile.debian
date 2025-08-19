@@ -1,0 +1,21 @@
+# Note: The build stage is used to build the PyPI `gpiod` package wheel
+# from source on platforms such as armv7l for which a pre-built wheel is
+# not available on PyPI or Piwheels. (The latter still does not provide
+# wheels for Python 3.12 or 3.13 as of June 2025.)
+
+# https://hub.docker.com/_/python
+FROM python:3.13-bookworm AS build
+WORKDIR /oh_so_smart
+COPY requirements.txt ./
+RUN python -m venv env && ./env/bin/pip install -r requirements.txt
+
+FROM python:3.13-slim-bookworm
+RUN apt-get update && apt-get install -y procps rsync
+WORKDIR /oh_so_smart
+COPY --from=build /oh_so_smart ./
+COPY oh_so_smart oh_so_smart/
+COPY scripts/*.py scripts/*.sh scripts/
+ENV W1THERMSENSOR_NO_KERNEL_MODULE=1
+ENTRYPOINT ["./env/bin/python", "-O", "oh_so_smart/restarter.py"]
+LABEL org.opencontainers.image.source=https://github.com/pdcastro/oh_so_smart
+LABEL org.opencontainers.image.licenses="OSL-3.0"

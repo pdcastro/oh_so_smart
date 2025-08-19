@@ -1,0 +1,14 @@
+.DS_Store
+.python-version
+*.pyc
+*.whl
+__pycache__
+site-packages
+/.vscode
+/build
+/config
+/data
+/env
+/venv
+/psr_env
+/unused

@@ -1,0 +1,18 @@
+[project]
+name = "oh_so_smart"
+version = "1.0.0"
+requires-python = ">= 3.12"
+
+[tool.pyright]
+extraPaths = ["scripts"]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+
+[tool.semantic_release.changelog]
+template_dir = "docs/psr-templates"
+
+[tool.semantic_release.commit_parser_options]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf", "chore"]
+# allowed_tags = ["feat", "fix", "perf", "build", "chore", "ci", "docs", "style", "refactor", "test"]

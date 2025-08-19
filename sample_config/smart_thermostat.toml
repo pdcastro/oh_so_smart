@@ -1,0 +1,128 @@
+# smart_thermostat.toml: Example configuration file for a smart thermostat device
+# that exposes two temperature sensors and two GPIO switches, controlled by two
+# Home Assistant Climate integration instances:
+# - “Living Room” Climate instance:
+#   - Takes readings from a temperature sensor fitted in a living room.
+#   - Acts on an on/off GPIO switch that turns central heating on/off.
+# - “Hot Water” Climate instance:
+#   - Takes readings from a temperature sensor fitted to a hot water tank.
+#   - Acts on an on/off GPIO switch that turns water heating on/off.
+
+# A product refers to a smart device category such as a smart power plug/socket
+# or a smart thermostat. All products share a common core codebase, but each
+# product may have some custom source code in a source code subdirectory.
+[product]
+# slug: A short name such as ‘smart_thermostat’ or ‘smart_socket’.
+# This value is used in MQTT identifiers and in Docker container names.
+slug = 'smart_thermostat'
+# source_dir: Subdirectory of oh_so_smart/products/ that contains
+# product-specific source code.
+source_dir = 'smart_thermostat'
+
+# The deployment section contains attributes of the hardware and software
+# environment that the product will be deployed to. This section is used
+# by deployment shell scripts rather than the application source code.
+[deployment]
+# docker_platforms: List of Docker platform identifiers for the target
+# device (the device that runs the Oh So Smart app, e.g. a Raspberry Pi).
+# A multi-platform Docker image is built if the list contains more than one
+# platform. This setting is used by the ‘docker.py build’ script. Examples:
+# - 'arm/v6'  (Raspberry Pi 1 and the original Pi Zero)
+# - 'arm/v7'  (Raspberry Pi 2)
+# - 'arm64'   (Raspberry Pi 3/4/5, Pi Zero 2)
+# - 'i386' or '386'  (32-bit x86)
+# - 'amd64' or 'x86_64' or 'x86-64'  (64-bit x86)
+docker_platforms = ['arm64']
+
+# python_distro: The Python Docker image variant, either ‘alpine’ or ‘debian’.
+# ‘distro’ is short for Linux Distribution. Choosing ‘alpine’ results in smaller
+# Docker images, but it is not well supported on arm/v6 or arm/v7 (the PyPI
+# `pydantic-core` package does not provide pre-built Python wheels for arm/v6
+# and arm/v7). See also comments in the ‘Dockerfile.alpine’ file.
+python_distro = 'alpine'
+
+# ssh_host_name: The name of the ‘Host’ entry in your workstation’s
+# ‘~/.ssh/config’ file (even on Microsoft Windows!) that configures ssh
+# access for the target device. The target device is the device that runs
+# the Oh So Smart app, e.g. a Raspberry Pi. This setting is used by the
+# ‘docker.py’ and ‘upload.py’ deployment scripts. For example, ssh_host_name
+# would be ‘pi4’ given the the following excerpt from ‘~/.ssh/config’:
+#   Host pi4
+#     Hostname 192.168.1.123
+#     User root
+#     Port 22
+#     PreferredAuthentications publickey
+#     ConnectTimeout 5
+ssh_host_name = 'pi4'
+
+# Project directory in the target device’s host operating system where the
+# Oh So Smart application files are deployed. Check the README file and the
+# help output of the ‘upload.py’ and ‘docker.py’ (or ‘docker.sh’) scripts for
+# additional documentation.
+host_os_project_dir = '/root/oh_so_smart'
+
+# MQTT broker details.
+[mqtt]
+client_id = 'smart_thermostat'
+
+# The MQTT server hostname, port number, username and password may be set here
+# in the TOML configuration file. Alternatively, environment variables with the
+# following names can be used:
+#     MQTT_SERVER_HOSTNAME
+#     MQTT_SERVER_PORT
+#     MQTT_SERVER_USERNAME
+#     MQTT_SERVER_PASSWORD
+# These variables take precedence over the respective settings below. If the
+# variables are set, the respective configuration lines below may be deleted.
+[mqtt.server]
+hostname = 'hostname_or_ip_address'
+port = 1883
+username = 'sample username'
+password = 'sample password'
+
+# Note: Double brackets [[...]] are TOML notation for an “array of tables”
+# (a.k.a. “list of objects” or “list of dictionaries”).
+
+# A sensor group (such as a group of DS18B20 temperature sensors) defines
+# common attributes such as the MQTT topic. The ‘.sensors’ subsection lists
+# each individual sensor in the group.
+[[temperature_sensor_groups]]
+mqtt_topic = 'smart_thermostat'
+poll_interval_sec = 30
+tolerate_missing_sensors = true
+w1_gpio_pin = 7 # 1-wire protocol for DS18B20 thermometers
+
+[[temperature_sensor_groups.sensors]]
+# root@pi3:~# ls /sys/bus/w1/devices/
+# 28-0722526be734  28-3ce1e3811e52  w1_bus_master1
+mqtt_name = 'Hot water temperature'
+type = 'ds18b20'
+bus_id = '3ce1e3811e52'
+offset = 0 # Positive or negative value added to the measurements
+outlier_delta = 5  # Degree Celsius delta that defines an outlier measurement
+outlier_window_size = 3  # Max number of measurements in the outlier filter window
+noise_window_size = 5  # Max number of measurements in the noise filter window
+
+[[temperature_sensor_groups.sensors]]
+mqtt_name = 'Living room temperature'
+type = 'ds18b20'
+bus_id = '3ce1e3817d30'
+offset = 0 # Positive or negative value added to the measurements
+
+# A switch group (such as a group of Home Assistant switches) defines common
+# attributes such as the MQTT topic. The ‘.switches’ subsection lists each
+# individual switch in the group.
+[[switch_groups]]
+mqtt_topic = 'smart_thermostat'
+keep_alive_timeout_sec = 30  # HASS MQTT msg timeout period. 0 to disable.
+
+# GPIO pin numbers are board header numbers. See ‘rpi_pin_map.py’.
+[[switch_groups.switches]]
+mqtt_name = 'Central Heating'
+slug = 'ch_hass'  # Immutable ID that may be hardcoded in source code
+gpio_pin = 11 # CH (Central Heating) HASS programmer
+
+[[switch_groups.switches]]
+mqtt_name = 'Hot Water'
+slug = 'hw_hass'  # Immutable ID that may be hardcoded in source code
+gpio_pin = 13 # HW (Hot Water) HASS programmer

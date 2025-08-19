@@ -1,0 +1,31 @@
+variant: fiot
+version: 1.0.0
+passwd:
+  users:
+    - name: root
+      password_hash: 'output of “mkpasswd --method=yescrypt”'
+      ssh_authorized_keys:
+        - 'contents of ~/.ssh/id_ecdsa.pub or some such .pub file'
+storage:
+  files:
+    - path: /etc/NetworkManager/system-connections/wifi.nmconnection
+      mode: 0600
+      overwrite: true
+      contents:
+        inline: |
+          [connection]
+          id=wifi
+          type=wifi
+          autoconnect=true
+          [wifi]
+          mode=infrastructure
+          ssid=YourWiFiNetworkName
+          [wifi-security]
+          psk=YourWiFiPassword
+          auth-alg=open
+          key-mgmt=wpa-psk
+          [ipv4]
+          method=auto
+          [ipv6]
+          method=auto
+          addr-gen-mode=eui64

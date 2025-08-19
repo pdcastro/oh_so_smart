@@ -1,0 +1,28 @@
+{# The ‘scripts/release.py’ script creates a symbolic link named ‘default’ that
+ # points to the default Python Semantic Release (PSR) template files at:
+ # ../../psr_env/lib/python3.13/site-packages/semantic_release/data/templates/conventional/md/
+ # Or on GitHub, e.g. for PSR v10.3.1:
+ # https://github.com/python-semantic-release/python-semantic-release/tree/v10.3.1/src/semantic_release/data/templates/conventional/md/
+ #}
+{% include ".default/.release_notes.md.j2" %}
+{% from ".vars.j2" import oh_image_name, oh_image_tags %}
+---
+
+Multi-platform Docker images for this release have the following tags:
+
+{% for tag in oh_image_tags -%}
+* `docker pull` `{{ oh_image_name ~ ':' ~ tag }}`
+{% endfor %}
+The latest release is always available as:
+
+* `docker pull` `{{ oh_image_name }}`
+
+`‘ghcr.io’` is the GitHub Container Registry. The full list of Oh So Smart images can
+be found at: https://github.com/pdcastro/oh_so_smart/pkgs/container/oh_so_smart
+
+To use a release _other than the latest_ with `scripts/docker.sh` or `scripts/docker.py`,
+use the `--image` option:
+
+```sh
+scripts/docker.py --image {{ oh_image_name ~ ':' ~ oh_image_tags[0] }} ... run
+```
