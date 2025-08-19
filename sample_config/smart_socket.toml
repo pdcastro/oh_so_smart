@@ -1,13 +1,15 @@
-# smart_socket.toml: Example configuration file for a smart double socket device.
+# smart_socket.toml: Example configuration file for a smart double-socket device.
 # Each socket is controlled by a Home Assistant switch mapped to a GPIO pin.
 
 # A product refers to a smart device category such as a smart power plug/socket
 # or a smart thermostat. All products share a common core codebase, but each
 # product may have some custom source code in a source code subdirectory.
 [product]
+
 # slug: A short name such as ‘smart_thermostat’ or ‘smart_socket’.
 # This value is used in MQTT identifiers and in Docker container names.
 slug = 'smart_socket'
+
 # source_dir: Subdirectory of oh_so_smart/products/ that contains
 # product-specific source code.
 source_dir = 'smart_socket'
@@ -16,6 +18,7 @@ source_dir = 'smart_socket'
 # environment that the product will be deployed to. This section is used
 # by deployment shell scripts rather than the application source code.
 [deployment]
+
 # docker_platforms: List of Docker platform identifiers for the target
 # device (the device that runs the Oh So Smart app, e.g. a Raspberry Pi).
 # A multi-platform Docker image is built if the list contains more than one
@@ -25,7 +28,7 @@ source_dir = 'smart_socket'
 # - 'arm64'   (Raspberry Pi 3/4/5, Pi Zero 2)
 # - 'i386' or '386'  (32-bit x86)
 # - 'amd64' or 'x86_64' or 'x86-64'  (64-bit x86)
-docker_platform = ['arm64']
+docker_platforms = ['arm64']
 
 # python_distro: The Python Docker image variant, either ‘alpine’ or ‘debian’.
 # ‘distro’ is short for Linux Distribution. Choosing ‘alpine’ results in smaller

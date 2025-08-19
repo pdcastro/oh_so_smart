@@ -38,9 +38,11 @@
 # or a smart thermostat. All products share a common core codebase, but each
 # product may have some custom source code in a source code subdirectory.
 [product]
+
 # slug: A short name such as ‘smart_thermostat’ or ‘smart_socket’.
 # This value is used in MQTT identifiers and in Docker container names.
 slug = 'dual_fuel_thermostat'
+
 # source_dir: Subdirectory of oh_so_smart/products/ that contains
 # product-specific source code.
 source_dir = 'dual_fuel_thermostat'
@@ -49,6 +51,7 @@ source_dir = 'dual_fuel_thermostat'
 # environment that the product will be deployed to. This section is used
 # by deployment shell scripts rather than the application source code.
 [deployment]
+
 # docker_platforms: List of Docker platform identifiers for the target
 # device (the device that runs the Oh So Smart app, e.g. a Raspberry Pi).
 # A multi-platform Docker image is built if the list contains more than one
@@ -119,8 +122,8 @@ tolerate_missing_sensors = true
 w1_gpio_pin = 7 # 1-wire protocol for DS18B20 thermometers
 
 [[temperature_sensor_groups.sensors]]
-# root@pi3:~# ls /sys/bus/w1/devices/
-# 28-0722526be734  28-3ce1e3811e52  w1_bus_master1
+# root@pi4:~# ls /sys/bus/w1/devices/
+# 28-3ce1e3811e52  28-3ce1e3817d30  w1_bus_master1
 mqtt_name = 'Hot water temperature'
 type = 'ds18b20'
 bus_id = '3ce1e3811e52'
