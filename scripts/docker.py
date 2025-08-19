@@ -208,7 +208,16 @@ async def _docker_save(opts: Opts, cfg: FlatConfig):
       is the hostname of the target device, saved in the TOML configuration
       file ‘deployment.hostname’ attribute.
     """
-    save_cmd = [*opts.docker_cli, "save", opts.image]
+    platforms = opts.docker_platforms or cfg.deployment_docker_platforms
+    if len(platforms) > 1:
+        source = "command line" if opts.docker_platforms else "config file"
+        raise ValidationError(
+            f"The {source} specifies multiple Docker platforms, but only one platform "
+            "can be saved with the ‘save’ subcommand. Please use the ‘--docker-platforms’ "
+            "option to specify a single platform."
+        )
+    plat_opt = ["--platform", f"linux/{platforms[0]}"] if platforms else []
+    save_cmd = [*opts.docker_cli, "save", *plat_opt, opts.image]
     remote_cmd = [
         *(["sudo"] if opts.sudo else []),
         '"$(command -v docker || command -v podman || command -v balena-engine || echo docker)"',
