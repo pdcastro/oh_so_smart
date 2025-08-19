@@ -42,8 +42,8 @@ Oh So Smart has a configurable, extensible design to accommodate different kinds
 devices. Implementations of a **Smart Power Plug/Socket** and a **Smart Thermostat** are
 currently provided:
 
-* **Smart Thermostat:** Periodically send temperature readings to Home Assistant, and turn
-  a GPIO pin *on/off* under Home Assistant’s control.
+* **Smart Thermostat:** Periodically send temperature readings from one or more sensors to
+  Home Assistant, and turn one or more GPIO pins *on/off* under Home Assistant’s control.
   - Noise and outlier filters (with configurable parameters) are applied to temperature
     readings before sending them to Home Assistant, which is particularly helpful when
     low cost sensors* are used.
@@ -291,16 +291,13 @@ Examples with rich comments can be found in the ‘sample_config’ folder:
 * [smart_thermostat.toml](sample_config/smart_thermostat.toml)
 * [smart_socket.toml](sample_config/smart_socket.toml)
 
-Copy one of the files and edit it according to your environment. The file needs to be
-transferred to the target device.
+Copy one of the files and edit it according to your environment, then transfer it to the
+target device. Watch out that some sections like `[product]` use single brackets, while
+other sections like `[[switch_groups]]` use double brackets. The latter is TOML’s syntax
+for an [“array of tables”](https://toml.io/en/v1.0.0#array-of-tables). Getting the
+brackets wrong can result in puzzling error messages from the file parser and validator. 😊
 
-Watch out that some sections like `[product]` use single brackets, while other sections
-like `[[switch_groups]]` use double brackets. The latter is TOML’s syntax for an [“array
-of tables”](https://toml.io/en/v1.0.0#array-of-tables). Getting the brackets wrong results
-in some puzzling error messages from the file parser and validator. 😊
-
-There is a separate section for [Configuring the keep-alive
-feature](#configuring-the-keep-alive-feature).
+See also [Configuring the keep-alive feature](#configuring-the-keep-alive-feature).
 
 ## Running Oh So Smart
 
@@ -313,7 +310,7 @@ instructions for building your own images can be found in the
 ### Manually starting a container
 
 Before introducing the scripts, let’s start by running Oh So Smart “manually” with a long
-command line. This should give you an idea of what is involved, and help with solving
+command line. This should give you an idea of what is involved, and help with solving any
 issues.
 
 Run the following commands on the target device — either over the network on a SSH shell
@@ -338,11 +335,9 @@ docker stop smart_thermostat && docker rm smart_thermostat
 ```
 
 ‘docker’ may be replaced with ‘podman’ or ‘balena-engine’ as needed, e.g. on Fedora IoT or
-balenaOS respectively.
-
-The ‘--restart=unless-stopped’ option tells Docker (or Podman or Balena Engine) to
-automatically restart the container when the device reboots. It will not be automatically
-restarted if it is manually stopped or removed.
+balenaOS respectively. The ‘--restart=unless-stopped’ option tells Docker (or Podman or
+Balena Engine) to automatically restart the container when the device reboots. It will not
+be automatically restarted if it is manually stopped or removed.
 
 That’s it. If all went well, Home Assistant will automatically discover the MQTT entities
 of your new smart device! 🎉 But that long ‘docker run’ command line belongs in a script,
@@ -356,8 +351,8 @@ required parameters from the TOML configuration file. The scripts are also inclu
 Docker images for convenience, but they need to be executed on the “host OS” (outside the
 container), as their purpose is to run the container or build and transfer Docker images.
 
-Run the following commands to copy the scripts from the Docker image to the host OS for
-execution.
+Run the following commands on the target device in order to copy the scripts from the
+Docker image to the host OS for execution.
 
 ```sh
 # Copy the ‘scripts’ folder from the Docker image to e.g. ‘/tmp/’.
@@ -366,7 +361,7 @@ docker cp $(docker create ghcr.io/pdcastro/oh_so_smart):/oh_so_smart/scripts /tm
 
 # Run the Oh So Smart container on the target device. Performance hint: Replace
 # ‘docker.sh’ with ‘docker.py’ if the host OS has a ‘python3’ interpreter.
-# Use the ‘--help’ option for documentation on the available options.
+# Use the ‘--help’ option for further documentation on the available options.
 /tmp/scripts/docker.sh -c smart_thermostat.toml run
 
 # Clean up the temporary container used to copy the scripts.
@@ -374,14 +369,16 @@ docker container prune
 ```
 
 The ‘docker create’ command automatically downloads the image as needed, and then creates,
-but does not execute, a temporary container that allows for the ‘docker cp’ command to
-extract the scripts folder. ‘docker container prune’ then deletes the temporary container.
+but does not execute, a temporary container. The ‘docker cp’ command then copies the
+‘scripts’ folder from the temporary container. The temporary container can then be deleted
+with the ‘docker container prune’ command.
 
-The scripts may be copied to a better location than ‘/tmp/’, like a home directory. The
-scripts will log the executed ‘docker’ command lines for information and debugging.
+The scripts may be copied to a more permanent location than ‘/tmp/’, like a home
+directory.
 
-To check the container logs or to stop and remove the container, use the same commands
-mentioned in the previous section.
+The scripts will log the executed ‘docker’ command lines for information and debugging.
+To check the container logs or to stop and remove the container, use the ‘docker logs’,
+‘stop’ and ‘rm’ commands mentioned in the previous section.
 
 
 ## Configuring the keep-alive feature

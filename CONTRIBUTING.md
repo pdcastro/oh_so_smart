@@ -336,7 +336,7 @@ Release](https://python-semantic-release.readthedocs.io/en/stable/) tool is used
 to:
 
 * Automatically compute the next [semver](https://semver.org)-compliant release version
-  based on the commit prefixes. The current configuration in
+  based on commit message prefixes. The current configuration in
   [pyproject.toml](/pyproject.toml) maps the ‘feat’ prefix to a minor version bump and the
   ‘fix’, ‘perf’ and ‘chore’ prefixes to a patch version bump.
 * Automatically update the [CHANGELOG.md](/CHANGELOG.md) file.
