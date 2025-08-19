@@ -13,7 +13,6 @@ from ..factory import (
     CoreObjects,
     ProductObjects,
     make_switch_groups,
-    make_temperature_sensor_groups,
 )
 from ..gpio import setup_gpio_out_pins
 
@@ -28,9 +27,4 @@ def make_objects(core: CoreObjects) -> ProductObjects:
     cfg = validate_config(core.pre_config.config_dict, SmartSocketConfig)
     gpio_line = setup_gpio_out_pins(cfg)
     switch_groups = make_switch_groups(cfg.switch_groups, gpio_line)
-    temperature_sensor_groups = make_temperature_sensor_groups(cfg)
-    return ProductObjects(
-        config=cfg,
-        switch_groups=switch_groups,
-        temperature_sensor_groups=temperature_sensor_groups,
-    )
+    return ProductObjects(config=cfg, switch_groups=switch_groups)
